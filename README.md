@@ -28,4 +28,4 @@ sudo usermod -aG dialout $USER
 ```
 
 # Wiki
-Here is a complete [wiki](https://github.com/arenaudineau/AwesomeArray-PythonDriver/wiki) on how to use this library.
+Here is a complete [wiki](../../wiki) on how to use this library.
