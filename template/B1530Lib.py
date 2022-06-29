@@ -1,5 +1,5 @@
-from aad.extlibs import B1530Driver
-from aad.extlibs.stderr_redirect import stderr_redirector
+from template.extlibs import B1530Driver
+from template.extlibs.stderr_redirect import stderr_redirector
 import pyvisa as visa
 
 import pandas as pd
