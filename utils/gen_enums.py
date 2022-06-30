@@ -52,6 +52,7 @@ def parse_file(f):
 							if not enum_line.startswith(enum_prefix[:i]):
 								if i == 1:
 									enum_prefix = input("No prefix found, please provide one for '" + last_line[:-1] + "': ")
+									prefix_len = 0
 									prefix_provided = True
 								else:
 									enum_prefix = enum_prefix[:i - 1]
@@ -124,8 +125,8 @@ def generate_python(enums):
 	return content
 
 if __name__ == '__main__':	
-	stm_path    = '../../ChipsTestUC/New_UC_STM32CUBE'
-	python_path = 'd3'
+	stm_path    = sys.argv[1]
+	python_path = sys.argv[2]
 
 	enums = []
 	with open(stm_path + '/Core/Inc/main.h', 'r', encoding='utf-8') as f:
