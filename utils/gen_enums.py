@@ -36,6 +36,9 @@ def parse_file(f):
 					
 					enum_line = enum_line.strip()
 						
+					comment_idx = enum_line.find('//')
+					if comment_idx != -1:
+						enum_line = enum_line[:comment_idx]
 					if enum_line.endswith(','):
 						enum_line = enum_line[:-1]
 					if enum_line == '':
@@ -102,9 +105,10 @@ def generate_python(enums):
 		content += ":\n"
 
 		max_item_len = max(map(len, map(lambda x: x[0], items)))
-		for item_name, item_val in items:
+		for i, item in enumerate(items):
+			item_name, item_val = item
 			if item_val is None:
-				item_val = "en_auto()"
+				item_val = "0" if i == 0 else "en_auto()"
 
 			content += f"\t{item_name}" + (' ' * (max_item_len - len(item_name))) + f" = {item_val}\n"
 		content += "\n"
@@ -116,31 +120,25 @@ def generate_python(enums):
 			content += f"{name}_COUNT = len({name}_LIST)\n"
 		content += "\n"
 
-	content += "### END C enums and flags ###\n\n"
+	content += "### END C enums and flags ###\n"
 	return content
 
-if __name__ == '__main__':
-	if len(sys.argv) != 3:
-		raise ValueError("Invalid argument count, expected 2, got {}".format(len(sys.argv) - 1))
-		exit(1)
-	
-	stm_path    = sys.argv[1]
-	python_path = '.'
-
-	if len(sys.argv) >= 3:
-		if len(sys.argv) > 3:
-			print("Unrecognized arguments:", sys.argv[3:])
-		
-		python_path = sys.argv[2]
+if __name__ == '__main__':	
+	stm_path    = '../../ChipsTestUC/New_UC_STM32CUBE'
+	python_path = 'd3'
 
 	enums = []
-	with open(stm_path + '/Core/Inc/main.h', 'r') as f:
+	with open(stm_path + '/Core/Inc/main.h', 'r', encoding='utf-8') as f:
 		enums.extend(parse_file(f))
 
-	with open(stm_path + '/USB_DEVICE/App/usbd_cdc_if.h', 'r') as f:
+	with open(stm_path + '/USB_DEVICE/App/usbd_cdc_if.h', 'r', encoding='utf-8') as f:
 		enums.extend(parse_file(f))
 
-	with open(python_path + '/mcd.py', 'r') as f:
+	if len(enums) == 0:
+		print("No enumeration found, check that they are in between '// uc enums and flags' ; '// END uc enums and flags' comments")
+		exit(1)
+
+	with open(python_path + '/mcd.py', 'r', encoding='utf-8') as f:
 		content = str()
 		search_section_end = False
 		while True:
@@ -160,5 +158,6 @@ if __name__ == '__main__':
 				continue
 
 			content += line
-
-	print(content)
+	
+	with open(python_path + '/mcd.py', 'w', encoding='utf-8') as f:
+		f.write(content)
