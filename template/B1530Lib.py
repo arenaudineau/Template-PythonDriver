@@ -304,12 +304,7 @@ class Pulse(Waveform):
 
 	@property
 	def interval(self):
-		wait_beg = self.pattern[0][0]
-		wait_end = self.pattern[4][0]
-		if wait_beg == wait_end:
-			return wait_beg * 2
-		else:
-			return wait_beg, wait_end
+		return self.wait_beg + self.wait_end
 
 	@interval.setter
 	def interval(self, value):
