@@ -44,6 +44,26 @@ class Waveform:
 		for _ in range(count):
 			self.pattern.extend(cp.deepcopy(pat))
 		return self
+
+	def copy(self, **kwargs):
+		"""
+		Creates a copy of the waveform.
+		
+		Parameters:
+			Keyword arguments corresponding to the waveform attributes to change.
+
+		Returns:
+			Copy of the waveform with the modified attributes.
+		"""
+		copy = cp.deepcopy(self)
+
+		for name, val in kwargs.items():
+			if hasattr(copy, name):
+				setattr(copy, name, val)
+			else:
+				raise ValueError(f"Unknown Waveform attribute '{name}'")
+
+		return copy
 	
 	def measure(self, start_delay = 0, ignore_gnd=False, ignore_edges=True, ignore_settling=True, **kwargs):
 		"""
@@ -225,6 +245,63 @@ class Pulse(Waveform):
 
 		self.init_voltage = init_voltage
 
+	def centered_on(self, length = None, **kwargs):
+		"""
+		Returns a pulse centered on self.
+
+		Parameters:
+			length: float : Length of the new pulse ; If None (= default value), this function performs a copy
+			Keyword arguments corresponding to the waveform attributes to change.
+
+		Returns:
+			Pulse centered on self with the modified attributes.
+		"""
+		copy = self.copy()
+
+		length = length or self.length
+		diff = (self.length - length) / 2
+
+		copy.length = length
+		copy.wait_begin += diff
+		copy.wait_end   += diff
+
+		for name, val in kwargs.items():
+			if hasattr(copy, name):
+				setattr(copy, name, val)
+			else:
+				raise ValueError(f"Unknown Waveform attribute '{name}'")
+
+		return copy 
+
+	def reduced_length(self, length, **kwargs):
+		"""
+		Returns a pulse with length reduced but total duration conserved
+
+		Parameters:
+			length: float : Length of the new pulse ; If None (= default value), this function performs a copy
+			Keyword arguments corresponding to the waveform attributes to change.
+
+		Returns:
+			Pulse with reduced length, total duration conserved and the specified attributes changed.
+		"""
+		copy = self.copy()
+
+		diff = self.length - length
+
+		if diff < 0:
+			raise ValueError("Cannot increase length, directly used length attribute instead")
+
+		copy.length = length
+		copy.wait_end += diff
+
+		for name, val in kwargs.items():
+			if hasattr(copy, name):
+				setattr(copy, name, val)
+			else:
+				raise ValueError(f"Unknown Waveform attribute '{name}'")
+
+		return copy
+
 	@property
 	def interval(self):
 		wait_beg = self.pattern[0][0]
@@ -238,6 +315,22 @@ class Pulse(Waveform):
 	def interval(self, value):
 		self.pattern[0][0] = value / 2
 		self.pattern[4][0] = value / 2
+
+	@property
+	def wait_begin(self):
+		return self.pattern[0][0]
+
+	@wait_begin.setter
+	def wait_begin(self, value):
+		self.pattern[0][0] = value
+
+	@property
+	def wait_end(self):
+		return self.pattern[4][0]
+
+	@wait_end.setter
+	def wait_end(self, value):
+		self.pattern[4][0] = value
 
 	@property
 	def length(self):
