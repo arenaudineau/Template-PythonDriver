@@ -5,6 +5,7 @@ from enum import IntEnum, IntFlag
 from enum import auto as en_auto
 from functools import reduce
 from operator import or_
+from typing import List
 
 ###########################
 # Shift Register state code
@@ -157,6 +158,9 @@ class MCDriver:
 
 		Returns:
 			The actual number of bytes sent.
+
+		Details:
+			The µc cannot receive more than 64 bytes in one shot, this function will split the arguments and send them by packets of 64 bytes max
 		"""
 		if not self.ser.is_open:
 			raise Exception("Serial port not open")
@@ -165,22 +169,44 @@ class MCDriver:
 			self.uc_ack_mode = args[0]
 	
 		command_bytes = as_bytes(command)
-		cmd = b'\xAA' + command_bytes
-		for arg in args:
-			if isinstance(arg, int):
-				cmd += as_bytes(arg)
-			else:
-				cmd += bytes(arg)
-		cmd += b'\xAA'
-		
-		res = self.ser.write(cmd)
+		bytes_sent_count = 0
+
+		split_args = []
+		max_bytes = 64 - 3 # 64 bytes - '0xAA' - 'command-bytes' - '0xAA'/'0xAB'
+		while len(args) > max_bytes:
+			split_args.append(args[:max_bytes])
+			args = args[max_bytes:]
+
+			# After first loop:
+			max_bytes = 64 - 1 # 64 bytes - '0xAA'/'0xAB'
+
+		split_args.append(args[:])
+
+		# Words sent for instance:
+		#  0xAA, CMD, data0 ... data60, 0xAB
+		#  data61 .. data123, 0xAB
+		#  data124 .. data130, 0xAA
+		for i, args in enumerate(split_args):
+			cmd = b'\xAA' + command_bytes if i == 0 else b''
+			
+			for arg in args:
+				if isinstance(arg, int):
+					cmd += as_bytes(arg)
+				elif isinstance(arg, List):
+					raise ValueError("Please unpack lists in argument: '*[...]'")
+				else:
+					cmd += bytes(arg)
+
+			cmd += b'\xAA' if i + 1 == len(split_args) else b'\xAB'
+			
+			bytes_sent_count += self.ser.write(cmd)
 
 		if wait_for_ack:
 			ack = self.read(2, flush_rest=False)
 			if ack != b'\xAA' + command_bytes:
 				raise Exception(f"Expected ack for command '{command}', got '{ack}'")
 
-		return res
+		return bytes_sent_count
 
 	def read(self, size=None, wait_for=True, flush_rest=True):
 		"""
