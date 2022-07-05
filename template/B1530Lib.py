@@ -36,6 +36,7 @@ class Waveform:
 	def append(self, other):
 		"""Append another waveform to self. Returns self in order to chain the calls"""
 		self.pattern.extend(cp.deepcopy(other.pattern))
+		self = Waveform(self.pattern) # Transform specific waveform into generic one
 		return self
 
 	def repeat(self, count):
@@ -43,6 +44,7 @@ class Waveform:
 		pat = cp.deepcopy(self.pattern)
 		for _ in range(count):
 			self.pattern.extend(cp.deepcopy(pat))
+		self = Waveform(self.pattern) # Transform specific waveform into generic one
 		return self
 
 	def copy(self, **kwargs):
@@ -64,6 +66,31 @@ class Waveform:
 				raise ValueError(f"Unknown Waveform attribute '{name}'")
 
 		return copy
+
+	def append_wait_end(self, new_total_duration = None, wait_time = None):
+		"""
+		Appends a delay after the waveform.
+
+		Parameters:
+			new_total_duration: float : The new total duration of the waveform afterward, must be greater than current total duration
+			wait_time: float : Delay to append to the waveform
+
+		Details:
+			One and only one of new_total_duration or wait_time must be provided
+		"""
+		if new_total_duration is None == wait_time is None:
+			raise ValueError("One and only one of new_total_duration or wait_time expected")
+
+		if new_total_duration is not None:
+			delay = new_total_duration - self.get_total_duration()
+		else:
+			delay = wait_time
+
+		if delay <= 0:
+			raise ValueError("Delay to append is negative")
+
+		self.pattern.append([delay, 0])
+		return self
 	
 	def measure(self, start_delay = 0, ignore_gnd=False, ignore_edges=True, ignore_settling=True, **kwargs):
 		"""
@@ -187,11 +214,23 @@ class Waveform:
 
 		return meas
 
-	def get_time_pattern(self):
-		return [p[0] for p in self.pattern]
+	def get_time_pattern(self, filtered_out = False):
+		"""
+		Returns only the time-component of the pattern
+
+		Parameters:
+			filtered_out: bool : If True, will not include the points whose time/delay is zero [False by default] 
+		"""
+		return [p[0] for p in self.pattern if (not filtered_out) or (p[0] != 0)]
 	
-	def get_voltage_pattern(self):
-		return [p[1] for p in self.pattern]
+	def get_voltage_pattern(self, filtered_out = False):
+		"""
+		Returns only the voltage-component of the pattern
+
+		Parameters:
+			filtered_out: bool : If True, will not include the points whose time/delay is zero [False by default] 
+		"""
+		return [p[1] for p in self.pattern if (not filtered_out) or (p[0] != 0)]
 
 	def get_total_duration(self):
 		return sum(self.get_time_pattern())
@@ -207,6 +246,19 @@ class Waveform:
 
 	def get_min_abs_voltage(self):
 		return ft.reduce(lambda a, b: a if abs(a[1]) < abs(b[1]) else b, self.pattern)[1]
+
+	def get_filtered(self):
+		"""
+		Returns a new Waveform whose pattern does not include points with zero time/delay
+
+		TODO: Find a better name?
+		"""
+		pattern = list(filter(
+				lambda p: p[0] != 0,
+				self.pattern
+		))
+
+		return Waveform(pattern)
 
 ################
 # Pulse Waveform
@@ -235,13 +287,25 @@ class Pulse(Waveform):
 	    |<----interval/2---->|<-edges->|<----length---->|<-edges->|<----interval/2---->|
 	
 	"""
-	def __init__(self, voltage, interval, edges, length, init_voltage=0):
+	def __init__(self, voltage, edges, length, interval=None, wait_begin=None, wait_end=None, init_voltage=0):
+		if interval is None:
+			if wait_begin is None or wait_end is None:
+				raise ValueError("Either interval or wait_begin/end expected, none got provided")
+		else:
+			if wait_begin is not None or wait_end is not None:
+				raise ValueError("Either interval or wait_begin/end expected, both got provided")
+
 		self.pattern = [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]
 		
 		self.voltage  = voltage
-		self.interval = interval
 		self.edges    = edges
 		self.length   = length
+
+		if interval is not None:
+			self.interval = interval
+		else:
+			self.wait_begin = wait_begin
+			self.wait_end   = wait_end
 
 		self.init_voltage = init_voltage
 
@@ -251,7 +315,12 @@ class Pulse(Waveform):
 
 		Parameters:
 			length: float : Length of the new pulse ; If None (= default value), this function performs a copy
-			Keyword arguments corresponding to the waveform attributes to change.
+			**kwargs : additional arguments corresponding to the waveform attributes to change.
+
+		Details:
+			If new length < current length: The interval is modified so that the total duration of the pulse is not changed ;
+			If new length > current length: The interval is not modified hence the total duration may change ;
+			If new length = current length: Performs a copy ;
 
 		Returns:
 			Pulse centered on self with the modified attributes.
@@ -259,7 +328,10 @@ class Pulse(Waveform):
 		copy = self.copy()
 
 		length = length or self.length
-		diff = (self.length - length) / 2
+		diff = max(
+			0,
+			(self.length - length) / 2,
+		)
 
 		copy.length = length
 		copy.wait_begin += diff
@@ -304,7 +376,7 @@ class Pulse(Waveform):
 
 	@property
 	def interval(self):
-		return self.wait_beg + self.wait_end
+		return self.wait_begin + self.wait_end
 
 	@interval.setter
 	def interval(self, value):
@@ -696,17 +768,14 @@ class B1530:
 			# Configure waves
 			wf = channel.wave
 			self.d_createPattern(self.pattern_name[i], wf.pattern[0][1])
-			if len(wf.pattern) > 1:
-				time_pattern = wf.get_time_pattern()
-				voltage_pattern = wf.get_voltage_pattern()
-
-				if time_pattern[0] == 0: # If the first time point is 0, it has been set to define the start voltage, we remove it
-					time_pattern    = time_pattern[1:]
-					voltage_pattern = voltage_pattern[1:]
+			filtered_wf = wf.get_filtered()
+			if len(filtered_wf.pattern) > 1:
+				time_pattern    = filtered_wf.get_time_pattern()
+				voltage_pattern = filtered_wf.get_voltage_pattern()
 
 				self.d_addVectors(self.pattern_name[i], time_pattern, voltage_pattern, len(time_pattern))
-			elif wf.pattern[0][0] != 0: # DC settling
-				self.d_addVector(self.pattern_name[i], wf.pattern[0][0], wf.pattern[0][1])
+			else:
+				self.d_addVector(self.pattern_name[i], filtered_wf.pattern[0][0], filtered_wf.pattern[0][1])
 
 			# Configure meas
 			meas = channel.meas
