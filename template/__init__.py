@@ -1,7 +1,8 @@
 from typing import List
 
-from template import mcd, B1530Lib
+from template import mcd
 from template.mcd import State #, add other usefull import here
+import B1530Lib
 
 ###############################
 # WGFMU Configuration Constants
