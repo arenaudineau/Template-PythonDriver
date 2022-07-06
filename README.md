@@ -10,22 +10,21 @@ This library requires:
 * The associated NI-VISA drivers, see [the official doc](https://pyvisa.readthedocs.io/en/latest/faq/getting_nivisa.html#faq-getting-nivisa). (⚠️ 32 bits version required)
 
 ### Global installation
+> ⚠️ Replace each {template} by the correct driver name.
+
 1. Download and install the NI-VISA drivers
 2. `B1530driver.py` and `B1530ErrorModule.py` are licensed and cannot be shared on GitHub, they are therefore missing on this repo.  
-You must copy them at the location `extlibs/B1530Driver`, aside the `__init__.py` file.  
-3. You can then go back to the root of this repo and run the command `pip install .`. The script should download the Python library and install `{template}` globally.
+You must add their path to the environment variable PYTHONPATH. See the end of this README for instructions.  
+3. Run the command `pip install https://github.com/arenaudineau/{template}/archive/refs/heads/main.zip`
 
-You can now use `aad` as a regular library, by using `import {template}` in any directory on the computer.
+You can now use `{template}` as a regular library, by using `import B1530Lib` in any directory on the computer.
 
 ### Extending the driver
-Same as previously but use `pip install -e .` not to have to exec the command at every change.  After the extension is done, you can `pip install .`.
+You need to create a fork of this repo, `git clone` your fork onto your local computer and run `pip install -e .` in the root of the downloaded folder.  
+You can know use `{template}` in any directory of the computer and any changes in the sources will be taken into account. 
 
----
-#### **Linux users only**
-Only `mcdriver` is available on Linux. In order to test it out, you will need to add your user to the `dialout` group:  
-```bash
-sudo usermod -aG dialout $USER
-```
+### Adding path to PYTHONPATH
+TODO
 
 # Wiki
 Here is a complete [wiki](../../wiki) on how to use this library.
