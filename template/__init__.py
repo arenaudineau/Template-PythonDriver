@@ -44,15 +44,31 @@ class TemplateDriver:
 		Arguments:
 			pid: optional, the pid to search for.
 		"""
-		self._mcd = mcd.MCDriver(uc_pid)
+		self._mcd     = None
+		self._b1530   = None
+
+		try:
+			self._mcd = mcd.MCDriver(uc_pid)
+		except Exception as e:
+			del self
+			raise e
 
 		try:
 			self._b1530 = B1530Lib.B1530(addr=visa_addr)
 		except Exception as e:
-			self._mcd.ser.close()
+			del self
 			raise e
 		
 		self.reset_state()
+
+	def __del__(self):
+		if self._b1530 is not None:
+			self._b1530._del__() # Because somehow del self._b1530 doesnt work
+			self._b1530 = None
+
+		if self._mcd is not None:
+			self._mcd.__del__() # Because somehow del self._b1530 doesnt work
+			self._mcd = None
 
 	def reset_state(self):
 		"""
