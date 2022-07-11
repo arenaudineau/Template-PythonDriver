@@ -1,5 +1,5 @@
 # Template-PythonDriver
-Template for making a Python Driver for chips @ C2N
+Template for making a Python Driver for chips, developped @ C2N
 
 ## Installation
 This library requires:  
@@ -17,14 +17,16 @@ This library requires:
 You must add their path to the environment variable PYTHONPATH. See the end of this README for instructions.  
 3. Run the command `pip install https://github.com/arenaudineau/{template}/archive/refs/heads/main.zip`
 
-You can now use `{template}` as a regular library, by using `import B1530Lib` in any directory on the computer.
+You can now use `{template}` as a regular library, by using `import {template}` in any directory on the computer.
 
 ### Extending the driver
 You need to create a fork of this repo, `git clone` your fork onto your local computer and run `pip install -e .` in the root of the downloaded folder.  
 You can know use `{template}` in any directory of the computer and any changes in the sources will be taken into account. 
 
 ### Adding path to PYTHONPATH
-TODO
+`Win + R` -> Write "SystemPropertiesAdvanced", Enter => Environment Variables... => User Variables for XXX ;  
+If `PYTHONPATH` exists, edit it and append the path to B1530driver files ;  
+Otherwise, create it.
 
 # Wiki
 Here is a complete [wiki](../../wiki) on how to use this library.
