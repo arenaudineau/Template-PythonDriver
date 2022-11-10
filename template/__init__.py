@@ -1,7 +1,6 @@
-from typing import List
-
 from template import mcd
 from template.mcd import State #, add other usefull import here
+from template.method_decorator import method
 import B1530Lib
 
 ###############################
@@ -63,7 +62,7 @@ class TemplateDriver:
 
 	def __del__(self):
 		if self._b1530 is not None:
-			self._b1530._del__() # Because somehow del self._b1530 doesnt work
+			self._b1530.__del__() # Because somehow del self._b1530 doesnt work
 			self._b1530 = None
 
 		if self._mcd is not None:
