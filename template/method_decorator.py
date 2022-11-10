@@ -8,7 +8,12 @@ def method(obj):
     name = func.__name__
     if "parent" in inspect.getfullargspec(func)[0]:
       if hasattr(obj, name):
-        parent = functools.partial(copy_func(getattr(obj, name)), obj)
+        func_copy = copy_func(getattr(obj, name))
+        if "self" in inspect.getfullargspec(func_copy)[0]:
+          parent = functools.partial(func_copy, obj)
+        else:
+          parent = func_copy
+          
       else:
         raise ValueError("Unexpected argument 'parent' as the method {} does not have a default implementation".format(name))
       
