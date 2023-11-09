@@ -14,8 +14,9 @@ This library requires:
 
 1. Download and install the NI-VISA drivers
 2. `B1530driver.py` and `B1530ErrorModule.py` are licensed and cannot be shared on GitHub, they are therefore missing on this repo.  
-You must add their path to the environment variable PYTHONPATH. See the end of this README for instructions.  
-3. Run the command `pip install https://github.com/arenaudineau/{template}/archive/refs/heads/main.zip`
+You must add their path to the environment variable PYTHONPATH. See the end of this README for instructions.
+3. Run the command `pip install https://github.com/arenaudineau/B1530Lib/archive/refs/heads/main.zip` to install `B1530Lib`.
+4. Run the command `pip install https://github.com/arenaudineau/{template}/archive/refs/heads/main.zip`.
 
 You can now use `{template}` as a regular library, by using `import {template}` in any directory on the computer.
 
